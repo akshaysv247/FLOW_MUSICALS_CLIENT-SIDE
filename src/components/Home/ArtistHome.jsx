@@ -1,14 +1,14 @@
 import React from 'react';
-import Sidebar from '../Sidebar/Sidebar';
+import ArtistSidebar from '../Sidebar/ArtistSidebar';
 import Header from '../Header/Header';
 
 function ArtistHome() {
   return (
-    <div className="w-screen h-screen grid grid-cols-2 relative bg-hero-1">
-      <div className="w-full h-full ml-10 p3 absolute">
-        <Sidebar />
+    <div className="w-screen h-screen grid relative bg-[#050514]">
+      <div className="w-full h-full ml-3 ">
+        <ArtistSidebar />
       </div>
-      <div>
+      <div className="absolute w-full h-full">
         <Header />
       </div>
     </div>

@@ -1,135 +1,245 @@
-import React, { useState } from 'react';
+/* eslint-disable no-shadow */
+/* eslint-disable jsx-a11y/label-has-associated-control */
+/* eslint-disable react/jsx-props-no-spreading */
+/* eslint-disable import/no-extraneous-dependencies */
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { TextField } from '@mui/material';
+import { useForm } from 'react-hook-form';
+import toast, { Toaster } from 'react-hot-toast';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import { Auth } from '../../Config/firebase.config';
 import axios from '../../Axios/Axios';
 import Logo from '../Logo/Logo2';
 import './Signup.css';
 
 function Signup() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const {
+    register, handleSubmit, formState: { errors }, watch,
+  } = useForm();
+  const password = useRef({});
+  password.current = watch('password', '');
+  const [otp, setOtp] = useState(false);
+  const [vOtp, setVOtp] = useState('');
+  const [res, setRes] = useState('');
+  const [verified, setVerified] = useState(false);
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [ConformPassword, setConformPassword] = useState('');
-
-  const [error, setError] = useState(null);
+  const [resError, setResError] = useState(null);
 
   const Navigate = useNavigate();
 
-  const handleSignup = (e) => {
-    e.preventDefault();
+  const handleRegistration = (data) => {
     try {
-      // console.log(name, email);
-      // console.log('vannu');
-      setError(null);
-      axios.post('/userSignup', {
-        name, email, phone, password,
-      }).then((response) => {
-        const result = response.data;
-        if (result.success) {
-          toast.success(result.message);
-          toast('Please Login');
-          Navigate('/');
-        } else {
-          setError(result.message);
-        }
-      });
+      if (data && verified) {
+        axios.post('/userSignup', {
+          data,
+        }).then((response) => {
+          if (response.data.success) {
+            setResError.success(response.data.message);
+            toast.success(response.data.message);
+            Navigate('/');
+          } else {
+            setResError(response.data.message);
+            toast.error(response.data.message);
+          }
+        });
+      } else {
+        setResError('plases fill all the fields properly');
+      }
     } catch (err) {
-      console.log(err);
+      setResError('Something went wrong');
       toast.error('Something went wrong');
     }
   };
+  function setUpRecaptcha(phone) {
+    console.log(phone);
+    const recaptchaVerifier = new RecaptchaVerifier(
+      'recaptcha-seeker-container',
+      {},
+      Auth,
+    );
+    recaptchaVerifier.render();
+    signInWithPhoneNumber(Auth, `+91${phone}`, recaptchaVerifier).then((response) => {
+      setRes(response);
+    });
+  }
+  const handleVerification = () => {
+    try {
+      setUpRecaptcha(phone);
+      setOtp(true);
+      toast.success('OTP has been sent successfully');
+    } catch (error) {
+      console.log(error.message);
+      toast.error(error.message);
+    }
+  };
+  const handleVerificationOtp = async () => {
+    try {
+      await res.confirm(vOtp).then((result) => {
+        console.log(result);
+        toast.success(result.message);
+        setVerified(true);
+      });
+    } catch (error) {
+      console.log(error.message);
+      toast.error(error.message);
+    }
+  };
+
+  const validatePasswordMatch = (value) => {
+    const passwordFieldValue = watch('password');
+    return value === passwordFieldValue || 'Passwords do not match';
+  };
+
   return (
-    <div className="w-screen h-screen grid grid-cols-2 bg-hero3">
-      <div className="flex justify-center w-1/screen h-screen items-center">
+    <div className="w-screen h-[900px] grid grid-cols-2 bg-hero2 bg-cover bg-center">
+      <div className="justify-center w-1/screen h-screen items-center hidden sm:flex">
         <Logo />
       </div>
-      <div className="w-1/screen h-screen flex justify-center">
-        <div className="w-[400px] h-[600px] bg-[#5408e17b] flex justify-center mt-20 rounded-lg shadow-lg shadow-[#b908e1fb] relative">
-          <h3 className="absolute text-4xl text-white font-bold mt-8">
+      <div className="w-screen sm:w-6/12 h-fit sm:h-screen flex justify-center items-center">
+        <Toaster
+          position="bottom-center"
+          reverseOrder={false}
+        />
+        <form onSubmit={handleSubmit(handleRegistration)} className="w-full max-w-sm min-w-[300px] p-6 h-fit max-h-screen bg-[#5408e17b] rounded-lg shadow-lg shadow-[#b908e1fb]">
+          <h3 className="text-4xl text-white font-bold  text-center">
             Sign Up
           </h3>
-          <form onSubmit={handleSignup} className="mt-20">
-            <div className="w-full flex flex-col mt-5">
-              <TextField
-                id="standard-basic"
-                label="Name"
-                variant="standard"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                sx={{ input: { color: 'white' }, label: { color: 'white' } }}
-              />
+          <div className="w-full flex flex-col mt-5">
+            <h1 className="text-white">Name:</h1>
+            <input
+              type="text"
+              placeholder="Enter Name"
+              className="w-full rounded-md border border-[#e727ca] p-2"
+              {...register('name', {
+                required: 'Fill this field with your name',
+                maxLength: {
+                  value: 20,
+                  message: 'Username cannot exceed 20 characters',
+                },
+                minLength: {
+                  value: 4,
+                  message: 'Username must be at least 4 characters',
+                },
+              })}
+            />
+            {errors?.name && <span className="text-[red]">{errors.name.message}</span>}
+          </div>
+          <div className="w-full flex flex-col mt-2">
+            <h1 className="text-white">Email Address:</h1>
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              className="w-full rounded-md border border-[#e727ca] p-2"
+              {...register('email', {
+                required: 'Fill this field with your email address',
+                minLength: {
+                  value: 6,
+                  message: 'Email must be at least 6 characters',
+                },
+                pattern: {
+                  value: /\S+@\S+\.\S+/,
+                  message: 'Invalid email address',
+                },
+              })}
+            />
+            {errors?.email && <span className="text-[red]">{errors.email.message}</span>}
+          </div>
+          <h1 className="text-white">Phone Number:</h1>
+          <div className="w-full mt-2 flex justify-center gap-2">
+            <input
+              type="number"
+              placeholder="Enter Phone Number"
+              className="w-full rounded-md border border-[#e727ca] p-2"
+              {...register('phone', {
+                required: 'Fill this field with a valid phone number.',
+                maxLength: {
+                  value: 12,
+                  message: 'Phone number cannot exceed 12 characters',
+                },
+                minLength: {
+                  value: 10,
+                  message: 'Phone number must be at least 10 characters',
+                },
+              })}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            {phone && <button type="button" className="bg-[#0800ff] text-white w-20 h-10 rounded-lg p-2 " onClick={handleVerification}>Confirm</button>}
+            {errors?.phone && <span className="text-[red]">{errors.phone.message}</span>}
+          </div>
+          <div id="recaptcha-seeker-container" />
+          {
+          otp && (
+            <div>
+              <h1 className="text-white">Enter Otp:</h1>
+              <div className="w-full mt-2 flex justify-center">
+                <div className="w-full flex gap-3 justify-center">
+                  <input
+                    type="text"
+                    placeholder="Enter Otp"
+                    className="w-full rounded-md border border-[#e727ca] p-2"
+                    onChange={(e) => setVOtp(e.target.value)}
+                  />
+                  { !verified ? (<button type="button" className="bg-[#0800ff] text-white w-20 h-10 rounded-lg p-2 " onClick={handleVerificationOtp}>VERIFY</button>) : (<VerifiedIcon className="text-[blue] w-16 h-14" />)}
+                </div>
+              </div>
             </div>
-            <div className="w-full flex flex-col mt-2">
-              <TextField
-                id="standard-basic"
-                label="Email Address"
-                variant="standard"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                sx={{ input: { color: 'white' }, label: { color: 'white' } }}
-              />
-            </div>
-            <div className="w-full flex flex-col mt-2">
-              <TextField
-                id="standard-basic"
-                label="Phone number"
-                variant="standard"
-                type="number"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                sx={{ input: { color: 'white' }, label: { color: 'white' } }}
-              />
-            </div>
-            <div className="w-full flex flex-col mt-2">
-              <TextField
-                id="standard-basic"
-                label="Password"
-                variant="standard"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                sx={{ input: { color: 'white' }, label: { color: 'white' } }}
-              />
-            </div>
-            <div className="w-full flex flex-col mt-2">
-              <TextField
-                id="standard-basic"
-                label="Conform Password"
-                variant="standard"
-                type="password"
-                required
-                value={ConformPassword}
-                onChange={(e) => setConformPassword(e.target.value)}
-                sx={{ input: { color: 'white' }, label: { color: 'white' } }}
-              />
-            </div>
-            {error && <div className="text-[red]">{error}</div>}
-            <div className="w-full flex flex-col my-4 mt-5">
+          )
+            }
+          <div className="w-full flex flex-col mt-2">
+            <h1 className="text-white">Password:</h1>
+            <input
+              type="password"
+              placeholder="Enter Password"
+              className="w-full rounded-md border border-[#e727ca] p-2"
+              {...register('password', {
+                required: 'Fill this field with valid password',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters',
+                },
+                pattern: {
+                  value: /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/,
+                  message:
+              'Password must contain at least one uppercase letter, one lowercase letter, one number, and be at least 6 characters long',
+                },
+              })}
+            />
+            {errors?.password && <span className="text-[red]">{errors.password.message}</span>}
+          </div>
+          <div className="w-full flex flex-col mt-2">
+            <h1 className="text-white">Confirm Password:</h1>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              className="w-full rounded-md border border-[#e727ca] p-2"
+              {...register('ConfirmPassword', {
+                required: 'Please confirm your password',
+                validate: validatePasswordMatch,
+              })}
+            />
+            {errors?.ConformPassword && <span className="text-[red]">{errors.ConfirmPassword.message}</span>}
+          </div>
+          {resError && <div className="text-[red]">{resError}</div>}
+          <div className="w-full flex flex-col my-4 mt-5">
+            <div id="recaptcha-seeker-container" />
+            <button
+              className="w-full text-[20px] font-semibold text-white bg-[#d036afb1] hover:shadow-lg shadow-[#070706ee] rounded-md p-2 text-center flex items-center justify-center border-2 border-black hover:bg-gray-900 hover:border-[#fff6fb9e]"
+              type="submit"
+            >
+              Register
+            </button>
+            <hr className="mt-5 text-red-900" />
+            <Link to="/">
               <button
-                className="w-full text-[20px] font-semibold text-white bg-[#d036afb1] hover:shadow-lg shadow-[#070706ee] rounded-md p-2 text-center flex items-center justify-center border-2 border-black hover:bg-gray-900 hover:border-[#fff6fb9e]"
-                type="submit"
+                className="w-full text-black my-2 font-semibold bg-[#e82ca9bc] hover:bg-gray-900 hover:text-white hover:border-white hover:shadow-lg hover:shadow-black border-2 border-black rounded-md p-2 text-center"
+                type="button"
               >
-                Register
+                Log in
               </button>
-              <Link to="/">
-                <button
-                  className="w-full text-black my-2 font-semibold bg-[#e82ca9bc] hover:bg-gray-900 hover:text-white hover:border-white hover:shadow-lg hover:shadow-black border-2 border-black rounded-md p-2 text-center"
-                  type="button"
-                >
-                  Log in
-                </button>
-              </Link>
-            </div>
-          </form>
-        </div>
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );

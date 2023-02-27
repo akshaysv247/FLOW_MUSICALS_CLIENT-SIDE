@@ -23,7 +23,7 @@ function SignOps() {
               <h3 className="text-white text-3xl font-semibold">AS AN</h3>
             </div>
             <div className="flex justify-center pt-3">
-              <Link to="/artistSignup">
+              <Link to="/artist/signup">
                 <button
                   className="h-8 w-20 bg-[#fd173d] text-white rounded-lg hover:bg-[#ce1acecd]"
                   type="button"

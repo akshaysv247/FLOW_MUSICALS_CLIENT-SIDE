@@ -7,11 +7,11 @@ import MainContent from '../Content/MainContent';
 
 function Home() {
   return (
-    <div className="w-screen h-screen grid grid-cols-2 relative bg-black overflow-hidden">
-      <div className=" w-full h-full p-3 absolute hidden sm:block">
+    <div className="w-screen h-screen grid  relative bg-[#0b0618] overflow-hidden">
+      <div className=" w-full h-full mt-[70px] absolute hidden sm:block">
         <Sidebar />
       </div>
-      <div className="w-full absolute mt-3 ml-3">
+      <div className="w-full absolute">
         <Header />
       </div>
       <div className="absolute mt-24 sm:mt-28 m sm:ml-72 w-full h-full"><MainContent /></div>

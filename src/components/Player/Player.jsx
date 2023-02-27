@@ -16,7 +16,7 @@ import songImg from '../../Assets/Avatars/artist2.jpeg';
 function Player() {
   return (
     <div className="w-[98%]">
-      <div className=" h-14 bg-transparent border-2 hidden sm:block">
+      <div className=" h-16 bg-[#1a0730ab] hidden sm:block">
         <div className="flex items-center">
           <div className="w-14">
             <img src={songImg} alt="" className="h-16 w-14" />
@@ -69,7 +69,7 @@ function Player() {
             </div>
           </div>
         </div>
-        <div className="text-white flex border-t-2">
+        <div className="text-white flex border-t-2 bg-[#120524]">
           <div className="h-full flex mx-8 my-4">
             <FeedIcon fontSize="large" />
           </div>

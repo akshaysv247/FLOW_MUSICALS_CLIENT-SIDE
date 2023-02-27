@@ -1,43 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import TextField from '@mui/material/TextField';
 import Avatar from '@mui/material/Avatar';
+import { useDispatch } from 'react-redux';
+import { setArtistLogin } from '../../Redux/Slice/ArtistSlice';
 import Logo from '../Logo/Logo2';
 import axios from '../../Axios/Axios';
 
 function ArtistLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const Navigate = useNavigate();
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+
+  const validateEmail = () => {
+    if (!email) {
+      setEmailError('Please give a valid email');
+    } else {
+      setEmailError('');
+    }
+  };
+  const validatePassword = () => {
+    if (!password) {
+      setPasswordError('Please give a valid password');
+    } else {
+      setPasswordError('');
+    }
+  };
+  useEffect(() => {
+    validateEmail();
+  }, [email]);
+  useEffect(() => {
+    validatePassword();
+  }, [password]);
+
   const handleArtistLogin = (e) => {
     e.preventDefault();
     try {
-      axios.post('/artistLogin', { email, password }).then((response) => {
-        const result = response.data;
-        if (response.success) {
-          localStorage.setItem('ArtistToken', result.data.token);
-          Navigate('/artistHome');
-        }
-      });
+      if (!emailError && !passwordError) {
+        axios.post('/artist/login', { email, password }).then((response) => {
+          const result = response.data;
+          if (result.success) {
+            localStorage.setItem('artistToken', result.token);
+            dispatch(
+              setArtistLogin({
+                artist: 'artist',
+                name: result.name,
+                artistToken: result.token,
+              }),
+            );
+            Navigate('/artist/home');
+          } else {
+            setError(result.message);
+          }
+        });
+      } else {
+        setError(emailError || passwordError);
+      }
     } catch (err) {
       setError(err);
     }
   };
   return (
-    <div className=" w-full min-h-screen flex items-start bg-hero4">
+    <div className=" w-full h-screen flex items-start bg-hero4">
       <div className="relative w-1/2 h-screen flex flex-col">
         <div className="absolute top-24 left-20 flex flex-col">
           <Logo />
         </div>
         <div className="absolute top-[60%] left-[25%] flex flex-col">
-          <h1 className=" text-2xl text-[#000000] font-extrabold">
+          <h1 className=" text-2xl text-[#000000] font-extrabold mt-5">
             Get Into Flow Then Never Feel Low
           </h1>
         </div>
       </div>
       <div className="w-1/2 h-screen flex flex-col pt-[130px] ">
-        <div className="w-full flex flex-col max-w-[450px] max-h-[500px] text-white bg-[#393da547] p-9 rounded-lg mt-5 ">
+        <div className="w-full flex flex-col max-w-[450px] text-white bg-[#393da547] p-9 rounded-lg mt-5">
           <Avatar
             sx={{
               color: 'black',
@@ -57,21 +97,21 @@ function ArtistLogin() {
                 label="Email Address"
                 variant="standard"
                 type="email"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 sx={{ input: { color: 'white' }, label: { color: 'white' } }}
               />
+              {emailError && <span className="text-[red]">{emailError}</span>}
               <TextField
                 id="standard-basic"
                 label="Password"
                 variant="standard"
                 type="password"
-                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 sx={{ input: { color: 'white' }, label: { color: 'white' } }}
               />
+              {passwordError && <span className="text-[red]">{passwordError}</span>}
             </div>
             <div className="w-full flex items-center justify-between">
               <div className="w-full flex items-center mt-5">

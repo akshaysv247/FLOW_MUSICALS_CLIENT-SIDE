@@ -1,44 +1,83 @@
-import React, { useState } from 'react';
+/* eslint-disable import/no-extraneous-dependencies */
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import TextField from '@mui/material/TextField';
 import Avatar from '@mui/material/Avatar';
-import { toast } from 'react-hot-toast';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useDispatch } from 'react-redux';
+import { setLogin } from '../../Redux/Slice/UserSlice';
 import axios from '../../Axios/Axios';
 import Logo from '../Logo/Logo2';
 import './Login.css';
 // import {Form} from 'semantic-ui-react';
 
+// eslint-disable-next-line react/prop-types
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const Navigate = useNavigate();
+  const [email, setEmail] = useState(null);
+  const [password, setPassword] = useState(null);
   const [error, setError] = useState(null);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const Navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const validateEmail = () => {
+    if (email?.length === 0) {
+      setEmailError('Please give a valid email');
+    } else {
+      setEmailError('');
+    }
+  };
+  const validatePassword = () => {
+    if (password?.length === 0) {
+      setPasswordError('Please give a valid password');
+    } else {
+      setPasswordError('');
+    }
+  };
+  useEffect(() => {
+    validateEmail();
+  }, [email]);
+  useEffect(() => {
+    validatePassword();
+  }, [password]);
+
   const handleLogin = (e) => {
     e.preventDefault();
     try {
-      console.log(email);
-      console.log(password);
       setError(null);
-      axios.post('/userLogin', { email, password }).then((response) => {
-        const result = response.data;
-        if (result.success) {
-          localStorage.setItem('UserToken', result.data.data);
-          toast.success(result.message);
-          toast('Login Successful');
-          Navigate('/home');
-        } else {
-          toast.error('Login Failed');
-          setError(result.message);
-        }
-      });
+      if (!emailError && !passwordError) {
+        axios.post('/userLogin', { email, password }).then((response) => {
+          const result = response.data;
+          if (result.success) {
+            localStorage.setItem('token', result.token);
+            console.log(result);
+            dispatch(
+              setLogin({
+                user: 'user',
+                name: result.user.name,
+                token: result.token,
+              }),
+            );
+            toast.success(result.message);
+            toast.success('Login Successful');
+            Navigate('/home');
+          } else {
+            toast.error('Login Failed');
+            setError(result.message);
+          }
+        });
+      } else {
+        setError('Please enter valid email and password');
+      }
     } catch (err) {
-      console.log(err);
       toast.error('Something went wrong');
     }
   };
   return (
     <div className=" w-full min-h-screen flex items-start bg-hero2">
-      <div className="relative w-1/2 h-screen flex flex-col">
+      <div className="relative w-1/2 h-screen flex flex-col hidden sm:block">
         <div className="absolute top-[60px] left-[50px] flex flex-col">
           <Logo />
         </div>
@@ -48,20 +87,22 @@ function Login() {
           </h1>
         </div>
       </div>
-      <div className="w-1/2 h-screen flex flex-col pt-[130px] ">
-        <div className="w-full flex flex-col max-w-[450px] max-h-[500px] text-white bg-[#393da547] p-9 rounded-lg mt-5 ">
-          <Avatar
-            sx={{
-              color: 'black',
-              padding: '3px',
-              marginLeft: '168px',
-            }}
-          />
+      <div className="w-screen sm:w-6/12 h-screen flex justify-center items-center ">
+        <div className="w-full flex flex-col max-w-[450px] min-w-[250px] h-500 text-white bg-[#393da547] p-9 rounded-lg m-5 ">
+          <div className="flex w-full justify-center">
+            <Avatar
+              sx={{
+                color: 'black',
+                padding: '3px',
+              }}
+            />
+          </div>
           <div className="w-full flex flex-col mb-5">
             <h3 className="text-3xl font-semibold mb-4 text-center mt-4">
               Login
             </h3>
           </div>
+          <ToastContainer />
           <form onSubmit={handleLogin}>
             <div className="w-full flex flex-col">
               <TextField
@@ -69,22 +110,22 @@ function Login() {
                 label="Email Address"
                 variant="standard"
                 type="email"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 sx={{ input: { color: 'white' }, label: { color: 'white' } }}
 
               />
+              {emailError && <span className="text-[red]">{emailError}</span>}
               <TextField
                 id="standard-basic"
                 label="Password"
                 variant="standard"
                 type="password"
-                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 sx={{ input: { color: 'white' }, label: { color: 'white' } }}
               />
+              {passwordError && <span className="text-[red]">{passwordError}</span>}
             </div>
             <div>{error && <p className="text-[red]">{error}</p>}</div>
             <div className="w-full flex items-center justify-between">
@@ -111,7 +152,7 @@ function Login() {
             </div>
           </form>
           <div className="flex items-center justify-center">
-            <Link to="/artistLogin">
+            <Link to="/artist/login">
               <p className="text-black font-serif">Login as an ARTIST ?</p>
             </Link>
           </div>
